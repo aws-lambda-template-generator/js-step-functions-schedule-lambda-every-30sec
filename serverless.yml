@@ -1,0 +1,75 @@
+service: js-lambda-run-every-30-sec
+
+plugins:
+  - serverless-webpack # Enable typescript transpilation through webpack and deployment with serverless
+  # - serverless-plugin-git-variables # This plugin creates Tags based on the git repo information such as sha.
+  #- serverless-domain-manager # This plugin creates DNS records through Route 53.
+  - serverless-step-functions
+  - serverless-pseudo-parameters
+
+
+custom:  
+  stage: ${opt:stage, self:provider.stage}
+  region: ${opt:region, self:provider.region}
+  resourcePrefix: ${self:service}-${self:custom.stage}
+  env: ${opt:env, self:custom.stage}
+  account: ${opt:account, self:provider.account}
+  # customDomain: ${file(config/domains.yml)} # this is for custom dns for API endpoint
+  # certs: ${file(config/certs.yml)} # if creating custom dns, need to specify certificate
+  functionName: ${self:custom.env}-${self:service} # This is the function name appears in the AWS lambda console.
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  region: ${file(config/account.yml):REGION} # from custom config
+  stage: test
+  account: ${file(config/account.yml):ACCOUNT_ID} # from custom config
+  memorySize: 2048
+  timeout: 30
+  iamRoleStatements: ${file(config/permissions.yml)}
+  deploymentBucket:
+    name: ${file(config/account.yml):DEPLOYMENT_BUCKET} # from custom config
+    serverSideEncryption: AES256
+  environment: ${file(config/env.yml)}
+  # vpc: ${file(config/vpc/${self:custom.env}.yml)} # specifies which vpc to run, without it, defaults to default vpc.
+  # If using API gateway with key, specify the key name.
+  # apiKeys:
+  #   - ${self:custom.resourcePrefix}-api-key
+
+functions:
+  lambdaRunEvery30sec:
+    handler: src/handler.mockLambda # name of the handler function in src/handler.js
+    name: ${self:custom.functionName}
+    # events:
+    #   - schedule: rate(1 minute) # this is the maximum speed. Hence, we need step functions to run it faster.
+
+stepFunctions:
+  stateMachines:
+    scheduleLambda30sec:
+      name: scheduleLambda30sec-${self:custom.env}
+      events:
+        - schedule: cron(0/1 21-23 ? * SUN-THUR *) # when -10 hours time difference, between 7am to 9pm AEST
+        - schedule: cron(0/1 0-7 ? * MON-FRI *)
+
+      definition:
+        Comment: "Running lambda every 30 seconds"
+        StartAt: lambdaExecute1
+        States:
+          lambdaExecute1:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [lambdaRunEvery30sec, Arn]
+            Next: waitFor30sec
+          waitFor30sec:
+            Type: Wait
+            Seconds: 30
+            Next: lambdaExecute2
+          lambdaExecute2:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [lambdaRunEvery30sec, Arn]
+            End: true
+  
+# If you need to create AWS resources such as dynamodb or cloudwatch, specify in resource.yml
+# resources: 
+#   Resources: ${file(config/resources.yml)}
