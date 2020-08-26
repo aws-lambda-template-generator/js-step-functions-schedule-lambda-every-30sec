@@ -1,8 +1,7 @@
 service: js-lambda-run-every-30-sec
 
 plugins:
-  - serverless-webpack # Enable typescript transpilation through webpack and deployment with serverless
-  # - serverless-plugin-git-variables # This plugin creates Tags based on the git repo information such as sha.
+  - serverless-plugin-git-variables # This plugin creates Tags based on the git repo information such as sha.
   #- serverless-domain-manager # This plugin creates DNS records through Route 53.
   - serverless-step-functions
   - serverless-pseudo-parameters

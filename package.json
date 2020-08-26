@@ -6,7 +6,8 @@
   "scripts": {
     "test": "nyc --reporter=html --reporter=text mocha",
     "integration": "nyc --reporter=html --reporter=text mocha ./integration/*",
-    "deploy": "sls deploy"
+    "deploy": "sls deploy",
+    "remove": "sls remove"
   },
   "repository": {
     "type": "git",

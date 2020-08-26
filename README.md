@@ -28,6 +28,13 @@ sls deploy --stage prod
 npm run deploy -- --stage prod
 ```
 
+Remove the function (this deletes the cloud formation)
+
+```bash
+sls remove --stage nonprod
+npm run remove -- --stage nonprod
+```
+
 ## Optimising Memory Allocation
 
 Using AWS Lambda Power Tuning deployed to AWS Connect Account (see details [here](https://cbussuper-uat.atlassian.net/wiki/spaces/ES/pages/1172013219/1.+Optimising+Memory+Allocation)).
